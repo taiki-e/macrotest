@@ -47,18 +47,26 @@ where
     S: AsRef<OsStr>,
 {
     let mut cargo = cargo(project);
-    let cargo = cargo
-        .arg("expand")
-        .arg("--bin")
-        .arg(name.as_ref())
-        .arg("--theme")
-        .arg("none");
+    cargo.arg("rustc").arg("--bin").arg(name.as_ref());
 
+    let mut has_rest = false;
     if let Some(args) = args {
-        cargo.args(args.clone());
+        for arg in args.clone() {
+            let arg = arg.as_ref();
+            if arg == "--" {
+                has_rest = true;
+            }
+            cargo.arg(arg);
+        }
+    }
+    if !has_rest {
+        cargo.arg("--");
     }
 
     let cargo_expand = cargo
+        .arg("-Z")
+        .arg("unpretty=expanded")
+        .env("RUSTC_BOOTSTRAP", "1")
         .output()
         .map_err(|e| Error::CargoExpandExecution(e.to_string()))?;
 
@@ -73,15 +81,34 @@ where
 /// Tries to expand macros in `main.rs` and intentionally filters the result.
 /// This function is called before macro expansions to speed them up and
 /// for dependencies build process to be visible for user.
-pub(crate) fn build_dependencies(project: &Project) -> Result<()> {
+pub(crate) fn build_dependencies<I, S>(project: &Project, args: &Option<I>) -> Result<()>
+where
+    I: IntoIterator<Item = S> + Clone,
+    S: AsRef<OsStr>,
+{
     use std::io::Write;
 
-    let stdout = cargo(project)
-        .arg("expand")
-        .arg("--bin")
-        .arg(project.name.clone())
-        .arg("--theme")
-        .arg("none")
+    let mut cargo = cargo(project);
+    cargo.arg("rustc").arg("--bin").arg(project.name.clone());
+
+    let mut has_rest = false;
+    if let Some(args) = args {
+        for arg in args.clone() {
+            let arg = arg.as_ref();
+            if arg == "--" {
+                has_rest = true;
+            }
+            cargo.arg(arg);
+        }
+    }
+    if !has_rest {
+        cargo.arg("--");
+    }
+
+    let stdout = cargo
+        .arg("-Z")
+        .arg("unpretty=expanded")
+        .env("RUSTC_BOOTSTRAP", "1")
         .stdout(std::process::Stdio::piped())
         .spawn()?
         .stdout
