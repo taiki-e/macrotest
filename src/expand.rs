@@ -124,7 +124,7 @@ where
     let len = tests.len();
     println!("Running {} macro expansion tests", len);
 
-    let project = prepare(&tests).unwrap_or_else(|err| {
+    let project = prepare(&tests, &args).unwrap_or_else(|err| {
         panic!("prepare failed: {:#?}", err);
     });
 
@@ -175,7 +175,11 @@ where
     }
 }
 
-fn prepare(tests: &[ExpandedTest]) -> Result<Project> {
+fn prepare<I, S>(tests: &[ExpandedTest], args: &Option<I>) -> Result<Project>
+where
+    I: IntoIterator<Item = S> + Clone,
+    S: AsRef<OsStr>,
+{
     let metadata = cargo::metadata()?;
     let target_dir = metadata.target_directory;
     let workspace = metadata.workspace_root;
@@ -240,7 +244,7 @@ fn prepare(tests: &[ExpandedTest]) -> Result<Project> {
 
     fs::create_dir_all(&project.inner_target_dir)?;
 
-    cargo::build_dependencies(&project)?;
+    cargo::build_dependencies(&project, args)?;
 
     Ok(project)
 }
