@@ -55,11 +55,15 @@ impl Drop for Project {
 ///
 /// Will panic if matching `.expanded.rs` file is present, but has different expanded code in it.
 pub fn expand(path: impl AsRef<Path>) {
-    run_tests(
-        path,
-        ExpansionBehavior::RegenerateFiles,
-        Option::<Vec<String>>::None,
-    );
+    if env::var_os("CI").is_some() {
+        expand_without_refresh(path.as_ref());
+    } else {
+        run_tests(
+            path.as_ref(),
+            ExpansionBehavior::RegenerateFiles,
+            Option::<Vec<String>>::None,
+        );
+    }
 }
 
 /// Same as [`expand`] but allows to pass additional arguments to `cargo-expand`.
@@ -70,7 +74,15 @@ where
     I: IntoIterator<Item = S> + Clone,
     S: AsRef<OsStr>,
 {
-    run_tests(path, ExpansionBehavior::RegenerateFiles, Some(args));
+    if env::var_os("CI").is_some() {
+        expand_without_refresh_args(path.as_ref(), args)
+    } else {
+        run_tests(
+            path.as_ref(),
+            ExpansionBehavior::RegenerateFiles,
+            Some(args),
+        );
+    }
 }
 
 /// Attempts to expand macros in files that match glob pattern.
@@ -195,7 +207,7 @@ where
     let overwrite = match env::var_os("MACROTEST") {
         Some(ref v) if v == "overwrite" => true,
         Some(v) => return Err(Error::UnrecognizedEnv(v)),
-        None => false,
+        None => env::var_os("CI").is_none(),
     };
 
     // Use random string for the crate dir to
