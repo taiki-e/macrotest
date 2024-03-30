@@ -5,8 +5,8 @@ pub(crate) enum Error {
     CargoFail,
     CargoMetadata(serde_json::error::Error),
     IoError(std::io::Error),
-    TomlSerError(toml_edit::ser::Error),
-    TomlDeError(toml_edit::de::Error),
+    TomlSerError(toml::ser::Error),
+    TomlDeError(toml::de::Error),
     GlobError(glob::GlobError),
     GlobPatternError(glob::PatternError),
     ManifestDirError,
@@ -47,14 +47,14 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl From<toml_edit::ser::Error> for Error {
-    fn from(e: toml_edit::ser::Error) -> Self {
+impl From<toml::ser::Error> for Error {
+    fn from(e: toml::ser::Error) -> Self {
         Error::TomlSerError(e)
     }
 }
 
-impl From<toml_edit::de::Error> for Error {
-    fn from(e: toml_edit::de::Error) -> Self {
+impl From<toml::de::Error> for Error {
+    fn from(e: toml::de::Error) -> Self {
         Error::TomlDeError(e)
     }
 }
