@@ -63,7 +63,7 @@
 //! The `_args` functions will result in the following [`cargo expand`] command being run:
 //!
 //! ```bash
-//! cargo expand --bin <test-name> --theme none --features my-feature
+//! cargo expand --bin <test-name> --ugly --theme none --features my-feature
 //! ```
 //!
 //! # Workflow
@@ -126,6 +126,7 @@ mod path;
 
 mod cargo;
 mod dependencies;
+mod edit;
 mod error;
 mod expand;
 mod features;

@@ -22,10 +22,7 @@ fn raw_cargo() -> Command {
 fn cargo(project: &Project) -> Command {
     let mut cmd = raw_cargo();
     cmd.current_dir(&project.dir);
-    cmd.env(
-        "CARGO_TARGET_DIR",
-        &project.inner_target_dir,
-    );
+    cmd.env("CARGO_TARGET_DIR", &project.inner_target_dir);
     rustflags::set_env(&mut cmd);
     cmd
 }
@@ -54,6 +51,7 @@ where
         .arg("expand")
         .arg("--bin")
         .arg(name.as_ref())
+        .arg("--ugly")
         .arg("--theme")
         .arg("none");
 
@@ -83,6 +81,7 @@ pub(crate) fn build_dependencies(project: &Project) -> Result<()> {
         .arg("expand")
         .arg("--bin")
         .arg(project.name.clone())
+        .arg("--ugly")
         .arg("--theme")
         .arg("none")
         .stdout(std::process::Stdio::piped())

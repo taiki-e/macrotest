@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::cargo;
 use crate::dependencies::{self, Dependency};
+use crate::edit;
 use crate::features;
 use crate::manifest::{Bin, Build, Config, Manifest, Name, Package, Workspace};
 use crate::message::{message_different, message_expansion_error};
@@ -447,6 +448,8 @@ fn normalize_expansion(input: &[u8]) -> String {
         }
         true
     });
+
+    edit::sanitize(&mut syntax_tree);
 
     prettyplease::unparse(&syntax_tree)
 }
