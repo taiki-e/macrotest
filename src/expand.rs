@@ -12,8 +12,7 @@ use crate::manifest::{Bin, Build, Config, Manifest, Name, Package, Workspace};
 use crate::message::{message_different, message_expansion_error};
 use crate::rustflags;
 use crate::{error::Error, error::Result};
-use syn::punctuated::Punctuated;
-use syn::{Item, Meta, Token};
+use syn::{Item, Meta, NestedMeta};
 
 /// An extension for files containing `cargo expand` result.
 const EXPANDED_RS_SUFFIX: &str = "expanded.rs";
@@ -244,13 +243,13 @@ where
     }
 
     fs::create_dir_all(path!(project.dir / ".cargo"))?;
-    fs::write(path!(project.dir / ".cargo" / "config.toml"), config_toml)?;
+    fs::write(path!(project.dir / ".cargo" / "config"), config_toml)?;
     fs::write(path!(project.dir / "Cargo.toml"), manifest_toml)?;
     fs::write(path!(project.dir / "main.rs"), b"fn main() {}\n")?;
 
     let source_lockfile = path!(project.workspace / "Cargo.lock");
     match fs::copy(source_lockfile, path!(project.dir / "Cargo.lock")) {
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(0),
+        Err(ref e) if e.kind() == std::io::ErrorKind::NotFound => Ok(0),
         otherwise => otherwise,
     }?;
 
@@ -441,17 +440,11 @@ fn normalize_expansion(input: &[u8]) -> String {
     //     #![feature(prelude_import)]
     //
     syntax_tree.attrs.retain(|attr| {
-        if let Meta::List(meta) = &attr.meta {
-            if meta.path.is_ident("feature") {
-                if let Ok(list) =
-                    meta.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
-                {
-                    if list.len() == 1 {
-                        if let Meta::Path(inner) = &list.first().unwrap() {
-                            if inner.is_ident("prelude_import") {
-                                return false;
-                            }
-                        }
+        if let Ok(Meta::List(meta)) = attr.parse_meta() {
+            if meta.path.is_ident("feature") && meta.nested.len() == 1 {
+                if let NestedMeta::Meta(Meta::Path(inner)) = &meta.nested[0] {
+                    if inner.is_ident("prelude_import") {
+                        return false;
                     }
                 }
             }
@@ -470,7 +463,7 @@ fn normalize_expansion(input: &[u8]) -> String {
     syntax_tree.items.retain(|item| {
         if let Item::Use(item) = item {
             if let Some(attr) = item.attrs.first() {
-                if attr.path().is_ident("prelude_import") && attr.meta.require_path_only().is_ok() {
+                if attr.path.is_ident("prelude_import") && attr.tokens.is_empty() {
                     return false;
                 }
             }
