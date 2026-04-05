@@ -87,7 +87,10 @@ fn try_find() -> Result<Vec<String>, Ignored> {
 }
 
 fn is_lower_hex_digit(byte: u8) -> bool {
-    matches!(byte, b'0'..=b'9' | b'a'..=b'f')
+    match byte {
+        b'0'..=b'9' | b'a'..=b'f' => true,
+        _ => false,
+    }
 }
 
 fn from_json<'de, T, D>(deserializer: D) -> Result<T, D::Error>
